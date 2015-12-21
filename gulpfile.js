@@ -37,19 +37,6 @@ var DIST = 'dist';
 var dist = function(subpath) {
   return !subpath ? DIST : path.join(DIST, subpath);
 };
-
-var styleTask = function(stylesPath, srcs) {
-  return gulp.src(srcs.map(function(src) {
-      return path.join('app', stylesPath, src);
-    }))
-    .pipe($.changed(stylesPath, {extension: '.css'}))
-    .pipe($.autoprefixer(AUTOPREFIXER_BROWSERS))
-    .pipe(gulp.dest('.tmp/' + stylesPath))
-    .pipe($.minifyCss())
-    .pipe(gulp.dest(dist(stylesPath)))
-    .pipe($.size({title: stylesPath}));
-};
-
 var imageOptimizeTask = function(src, dest) {
   return gulp.src(src)
     .pipe($.imagemin({
@@ -66,8 +53,6 @@ var optimizeHtmlTask = function(src, dest) {
   });
 
   return gulp.src(src)
-    // Replace path for vulcanized assets
-    .pipe($.if('*.html', $.replace('elements/elements.html', 'elements/elements.vulcanized.html')))
     .pipe(assets)
     // Concatenate and minify JavaScript
     .pipe($.if('*.js', $.uglify({
@@ -91,21 +76,10 @@ var optimizeHtmlTask = function(src, dest) {
     }));
 };
 
-// Compile and automatically prefix stylesheets
-gulp.task('styles', function() {
-  return styleTask('styles', ['**/*.css']);
-});
-
-gulp.task('elements', function() {
-  return styleTask('elements', ['**/*.css']);
-});
-
 // Lint JavaScript
 gulp.task('lint', function() {
   return gulp.src([
       'app/scripts/**/*.js',
-      'app/elements/**/*.js',
-      'app/elements/**/*.html',
       'gulpfile.js'
     ])
     .pipe(reload({
@@ -131,7 +105,6 @@ gulp.task('images', function() {
 gulp.task('copy', function() {
   var app = gulp.src([
     'app/*',
-    '!app/test',
     '!app/cache-config.json'
   ], {
     dot: true
@@ -141,23 +114,13 @@ gulp.task('copy', function() {
     'bower_components/**/*'
   ]).pipe(gulp.dest(dist('bower_components')));
 
-  var elements = gulp.src(['app/elements/**/*.html',
-      'app/elements/**/*.css',
-      'app/elements/**/*.js'
-    ])
-    .pipe(gulp.dest(dist('elements')));
-
   var swBootstrap = gulp.src(['bower_components/platinum-sw/bootstrap/*.js'])
     .pipe(gulp.dest(dist('elements/bootstrap')));
 
   var swToolbox = gulp.src(['bower_components/sw-toolbox/*.js'])
     .pipe(gulp.dest(dist('sw-toolbox')));
 
-  var vulcanized = gulp.src(['app/elements/elements.html'])
-    .pipe($.rename('elements.vulcanized.html'))
-    .pipe(gulp.dest(dist('elements')));
-
-  return merge(app, bower, elements, vulcanized, swBootstrap, swToolbox)
+  return merge(app, bower, vulcanized, swBootstrap, swToolbox)
     .pipe($.size({
       title: 'copy'
     }));
@@ -175,21 +138,8 @@ gulp.task('fonts', function() {
 // Scan your HTML for assets & optimize them
 gulp.task('html', function() {
   return optimizeHtmlTask(
-    ['app/**/*.html', '!app/{elements,test}/**/*.html'],
+    ['app/index.html'],
     dist());
-});
-
-// Vulcanize granular configuration
-gulp.task('vulcanize', function() {
-  var DEST_DIR = dist('elements');
-  return gulp.src(dist('elements/elements.vulcanized.html'))
-    .pipe($.vulcanize({
-      stripComments: true,
-      inlineCss: true,
-      inlineScripts: true
-    }))
-    .pipe(gulp.dest(DEST_DIR))
-    .pipe($.size({title: 'vulcanize'}));
 });
 
 // Generate config data for the <sw-precache-cache> element.
@@ -210,7 +160,7 @@ gulp.task('cache-config', function(callback) {
     'index.html',
     './',
     'bower_components/webcomponentsjs/webcomponents-lite.min.js',
-    '{elements,scripts,styles}/**/*.*'],
+    '{scripts}/**/*.*'],
     {cwd: dir}, function(error, files) {
     if (error) {
       callback(error);
@@ -233,7 +183,7 @@ gulp.task('clean', function() {
 });
 
 // Watch files for changes & reload
-gulp.task('serve', ['lint', 'styles', 'elements', 'images'], function() {
+gulp.task('serve', ['lint', 'images'], function() {
   browserSync({
     port: 5000,
     notify: false,
@@ -260,9 +210,7 @@ gulp.task('serve', ['lint', 'styles', 'elements', 'images'], function() {
   });
 
   gulp.watch(['app/**/*.html'], reload);
-  gulp.watch(['app/styles/**/*.css'], ['styles', reload]);
-  gulp.watch(['app/elements/**/*.css'], ['elements', reload]);
-  gulp.watch(['app/{scripts,elements}/**/{*.js,*.html}'], ['lint']);
+  gulp.watch(['app/{scripts}/**/{*.js,*.html}'], ['lint']);
   gulp.watch(['app/images/**/*'], reload);
 });
 
@@ -293,8 +241,7 @@ gulp.task('serve:dist', ['default'], function() {
 gulp.task('default', ['clean'], function(cb) {
   // Uncomment 'cache-config' if you are going to use service workers.
   runSequence(
-    ['copy', 'styles'],
-    'elements',
+    ['copy'],
     ['lint', 'images', 'fonts', 'html'],
     'vulcanize', // 'cache-config',
     cb);
