@@ -2,80 +2,73 @@
  * Copyright 2015 ubs121. Data service for PTA
  */
 
- (function(){
-   "use strict";
+ "use strict";
 
-  var DataService = function() {
-   this.services = new Array();
+var DataService = function() {
+ this.services = new Array();
 
-   this.calendar = new Array();
-   this.calendar_dates = new Array();
-   this.stops = new Array();
-   this.routes = new Array();
+ this.calendar = new Array();
+ this.calendar_dates = new Array();
+ this.stops = new Array();
+ this.routes = new Array();
 
-   // global object
-   window.ds = this;
-  };
+ // global object
+ window.ds = this;
+};
 
-  DataService.prototype.initialize = function(dataUrl) {
-    this.fetchData(dataUrl + "/calendar_dates.txt", function(data) {
-      console.log(data);
-      // TODO: parse csv and assign into this.calendar_dates
-    });
-  }
+// TODO: service worker support
+DataService.prototype.load = function(dataUrl) {
+  fetch(dataUrl)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(text) {
+      return this.parseCSV(text);
+    }.bind(this));
+};
 
-  DataService.prototype.fetchData = function(url, onResponse) {
-    var xmlhttp = new XMLHttpRequest();
+// parse csv
+DataService.prototype.parseCSV = function(csvString) {
+  var lines = csvString.split('\n');
+  var headerLine = lines[0];
+  var fields = headerLine.split(',');
 
-    xmlhttp.onreadystatechange = function() {
-        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            onResponse(xmlhttp.responseText);
-        }
-    };
-    xmlhttp.open("GET", url, true);
-    xmlhttp.send();
-  }
+  var dataArray = new Array();
 
-  // load csv
-  DataService.prototype.loadCsv = function(dataArray, csvString) {
-    var lines = csvString.split('\n');
-    var headerLine = lines[0];
-    var fields = headerLine.split(',');
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i];
 
-    for (var i = 1; i < lines.length; i++) {
-      var line = lines[i];
-
-      // The csvString that comes from the server has an empty line at the end,
-      // need to ignore it.
-      if (line.length == 0) {
-        continue;
-      }
-
-      var values = line.split(/[,|;\t]/);
-
-      var obj = {};
-      for (var j = 0; j < values.length; j++) {
-        obj[fields[j]] = values[j];
-      }
-
-      dataArray.push(obj);
-
+    // The csvString that comes from the server has an empty line at the end,
+    // need to ignore it.
+    if (line.length == 0) {
+      continue;
     }
+
+    var values = line.split(/[,|;\t]/);
+
+    var obj = {};
+    for (var j = 0; j < values.length; j++) {
+      obj[fields[j]] = values[j];
+    }
+
+    dataArray.push(obj);
+
   }
 
-  DataService.prototype.find = function(from, to) {
+  return dataArray;
+};
+
+DataService.prototype.find = function(from, to) {
     var from_ids = this.stops[from],
         to_ids = this.stops[to],
-        services = get_available_services(routes, calendar, calendar_dates);
+        services = this.get_available_services(routes, calendar, calendar_dates);
 
     var trips = this.getTrips(services, from_ids, to_ids);
 
     console.log(trips);
   }
-
-
-
-  DataService.prototype.getTrips =  function(services, from_ids, to_ids) {
+  
+DataService.prototype.getTrips =  function(services, from_ids, to_ids) {
     var result = [];
 
     Object.keys(services)
@@ -128,9 +121,16 @@
     return availables;
   }
 
+DataService.prototype.second2str = function(seconds) {
+  var minutes = Math.floor(seconds / 60);
+  return [
+    Math.floor(minutes / 60),
+    minutes % 60
+  ].map(function(item) {
+    return item.toString().rjust(2, '0');
+  }).join(':');
+};
+
   DataService.prototype.is_defined = function(obj) {
     return typeof(obj) !== "undefined";
   }
-
-
-}());

@@ -42,7 +42,6 @@ Copyright (c) 2015 ubs121
       padding: 10px;
     }
 
-
   </style>
 
 </head>
@@ -60,12 +59,12 @@ Copyright (c) 2015 ubs121
       <div class="middle">
         <div>
           <label for="from">From</label>
-          <input is="iron-input" id="from" list="location" bind-value="{{data.from}}" autocomplete>
+          <input is="iron-input" id="from" list="location" autocomplete>
         </div>
 
         <div>
           <label for="to">To</label>
-          <input is="iron-input" id="to" list="location" bind-value="{{data.to}}" autocomplete>
+          <input is="iron-input" id="to" list="location" autocomplete>
         </div>
 
       </div>
@@ -97,6 +96,10 @@ Copyright (c) 2015 ubs121
     <option>concert</option>
     <option>book club</option>
     <option>game</option>
+
+    <template is="dom-repeat" items="[[stops]]">
+      <option>[[item]]</option>      
+    </template>
   </datalist>
 
 

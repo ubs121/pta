@@ -37,10 +37,15 @@ Copyright (c) 2015 ubs121.
   });
 
   
-  window.ds = new DataService("data");
+  window.ds = new DataService();
+
+  // ds.load().then(function() {
+  //   app.stops = Object.keys(ds.stops);
+  // });
+
 
   app.find = function(e) {
-    app.trips = ds.find("", "");
+    app.trips = ds.find(app.$.from.value, app.$.to.value);
 
     // TODO: render trips
   };
