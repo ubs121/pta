@@ -42,9 +42,7 @@ Copyright (c) 2015 ubs121.
     console.log("Inited !");
     
     ds.stopNames().then(function(rs) {
-      console.log(rs);
       app.stops = rs;
-
     });
   });
 

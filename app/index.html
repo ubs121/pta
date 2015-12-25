@@ -54,16 +54,16 @@ Copyright (c) 2015 ubs121
   <paper-scroll-header-panel condenses keep-condensed-header>
     
     <paper-toolbar class="tall">
-      <div class="title">Train scheduler</div>
+      <div class="title">Train timetable</div>
 
       <div class="middle">
         <div>
-          <label for="from">From</label>
+          <label for="from">From station</label>
           <input is="iron-input" id="from" list="location" autocomplete>
         </div>
 
         <div>
-          <label for="to">To</label>
+          <label for="to">To station</label>
           <input is="iron-input" id="to" list="location" autocomplete>
         </div>
 
@@ -90,13 +90,6 @@ Copyright (c) 2015 ubs121
       
 
   <datalist id="location">
-    <option>birthday</option>
-    <option>conference</option>
-    <option>wedding</option>
-    <option>concert</option>
-    <option>book club</option>
-    <option>game</option>
-
     <template is="dom-repeat" items="[[stops]]">
       <option>[[item.name]]</option>      
     </template>
