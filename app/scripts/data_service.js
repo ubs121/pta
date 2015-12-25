@@ -5,58 +5,25 @@
  "use strict";
 
 var DataService = function() {
- this.services = new Array();
-
- this.calendar = new Array();
- this.calendar_dates = new Array();
- this.stops = new Array();
- this.routes = new Array();
-
- // global object
- window.ds = this;
+  this.data = {};
+  window.ds = this;
 };
 
-// TODO: service worker support
-DataService.prototype.load = function(dataUrl) {
-  fetch(dataUrl)
-    .then(function(response) {
-      return response.text();
-    })
-    .then(function(text) {
-      return this.parseCSV(text);
-    }.bind(this));
-};
-
-// parse csv
-DataService.prototype.parseCSV = function(csvString) {
-  var lines = csvString.split('\n');
-  var headerLine = lines[0];
-  var fields = headerLine.split(',');
-
-  var dataArray = new Array();
-
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i];
-
-    // The csvString that comes from the server has an empty line at the end,
-    // need to ignore it.
-    if (line.length == 0) {
-      continue;
-    }
-
-    var values = line.split(/[,|;\t]/);
-
-    var obj = {};
-    for (var j = 0; j < values.length; j++) {
-      obj[fields[j]] = values[j];
-    }
-
-    dataArray.push(obj);
-
-  }
-
-  return dataArray;
-};
+DataService.prototype.init  = function() {
+  return Promise.all([
+    load('data/stops.txt').then(function(text) {
+      // TODO: convert into map
+      this.stops = parseCsv(text);
+    }.bind(this)), 
+    load('data/routes.txt').then(function(text) {
+      console.log("routes.txt");
+    }), 
+    load('data/calendar.txt'),
+    load('data/calendar_dates.txt')])
+  .then(function() { 
+    console.log("All done!!!"); 
+  });
+} 
 
 DataService.prototype.find = function(from, to) {
     var from_ids = this.stops[from],
@@ -134,3 +101,56 @@ DataService.prototype.second2str = function(seconds) {
   DataService.prototype.is_defined = function(obj) {
     return typeof(obj) !== "undefined";
   }
+
+
+
+
+  /**
+  *   Helper functions
+  *
+  **/
+
+  function load(dataUrl, name) {
+  return fetch(dataUrl)
+    .then(function(response) {
+      return response.text();
+    });
+};
+
+// parse csv
+function parseCsv(csvString) {
+  var lines = csvString.split('\n');
+  var headerLine = lines[0];
+  var fields = headerLine.split(',');
+
+  var dataArray = new Array();
+
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i];
+
+    // The csvString that comes from the server has an empty line at the end,
+    // need to ignore it.
+    if (line.length == 0) {
+      continue;
+    }
+
+    var values = line.split(/[,|;\t]/);
+
+    var obj = {};
+    for (var j = 0; j < values.length; j++) {
+      obj[fields[j]] = unqoute(values[j]);
+    }
+
+    dataArray.push(obj);
+
+  }
+
+  return dataArray;
+};
+
+function unqoute(str) {
+  if (str.startsWith('"')) {
+    str = str.slice(1, str.length-1);
+  }
+  return str;
+}
