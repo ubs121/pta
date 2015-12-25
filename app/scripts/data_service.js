@@ -6,130 +6,87 @@
 
 var DataService = function() {
   this.data = {};
+  this.db_ = null;
+
+  this.schemaBuilder = this._buildSchema();
+
   window.ds = this;
 };
 
-DataService.prototype.init  = function() {
-  return Promise.all([
-    load('data/stops.txt').then(function(text) {
-      // TODO: convert into map
-      this.stops = parseCsv(text);
-    }.bind(this)), 
-    load('data/routes.txt').then(function(text) {
-      console.log("routes.txt");
-    }), 
-    load('data/calendar.txt'),
-    load('data/calendar_dates.txt')])
-  .then(function() { 
-    console.log("All done!!!"); 
-  });
-} 
+
+DataService.prototype.connect = function() {
+    if (this.db_ !== null) {
+      return Promise.resolve(this.db_);
+    }
+
+    // connect to db
+    //var opts = {storeType: lf.schema.DataStoreType.INDEXED_DB};
+    return this.schemaBuilder.connect().then(function(db){
+      this.db_ = db;
+      this.stops = db.getSchema().table('stops');
+      this.stop_times = db.getSchema().table('stop_times');
+
+      console.log('Connected to db !');
+
+
+      // insert data
+      load('data/stops.txt').then(function(text) {
+        this.importData(this.stops, text).then(function() {
+          console.log("importData!");
+        });
+      }.bind(this));
+
+
+      return db;
+    }.bind(this));
+
+}
+
+DataService.prototype._buildSchema = function() {
+    var schemaBuilder = lf.schema.create('pta', 1);
+    console.log('_buildSchema succeeded !');
+
+    schemaBuilder.createTable('stops').
+        addColumn('stop_id', lf.Type.STRING).
+        addColumn('stop_code', lf.Type.STRING).
+        addColumn('stop_name', lf.Type.STRING).
+        addPrimaryKey(['stop_id']);
+
+    schemaBuilder.createTable('stop_times').
+        //addColumn('id', lf.Type.INTEGER).
+        addColumn('trip_id', lf.Type.STRING).
+        addColumn('arrival_time', lf.Type.STRING).
+        addColumn('departure_time', lf.Type.STRING).
+        addColumn('stop_id', lf.Type.STRING).
+        addColumn('stop_sequence', lf.Type.INTEGER);
+        //addIndex('idx_stop_times', ['id'], false, lf.Order.DESC);
+
+    return schemaBuilder;
+}
+
+DataService.prototype.stopNames = function() {
+  return this.db_
+    .select(lf.fn.distinct(this.stops.stop_name).as('name'))
+    .from(this.stops)
+    .exec();
+}
 
 DataService.prototype.find = function(from, to) {
-    var from_ids = this.stops[from],
-        to_ids = this.stops[to],
-        services = this.get_available_services(routes, calendar, calendar_dates);
-
-    var trips = this.getTrips(services, from_ids, to_ids);
-
-    console.log(trips);
-  }
   
-DataService.prototype.getTrips =  function(services, from_ids, to_ids) {
-    var result = [];
-
-    Object.keys(services)
-      .forEach(function(service_id) {
-        var trips = services[service_id];
-        Object.keys(trips)
-          .forEach(function(trip_id) {
-            var trip = trips[trip_id];
-            var trip_stop_ids = trip.map(function(t) { return t[0]; });
-            var from_indexes = search_index(trip_stop_ids, from_ids);
-            var to_indexes = search_index(trip_stop_ids, to_ids);
-            if (!is_defined(from_indexes) || !is_defined(to_indexes) ||
-                from_indexes.length === 0 || to_indexes.length === 0) {
-              return;
-            }
-            var from_index = Math.min.apply(this, from_indexes);
-            var to_index = Math.max.apply(this, to_indexes);
-            // must be in order
-            if (from_index >= to_index) {
-              return;
-            }
-
-            result.push({
-              departure_time: trip[from_index][1],
-              arrival_time: trip[to_index][1]
-            });
-          });
-      });
-
-    return result.sort(compare_trip);
-  }
+}
 
 
-  DataService.prototype.get_available_services = function(routes, calendar, calendar_dates) {
-    var availables = {};
-    var service_id = get_service_id(calendar, calendar_dates);
-    if (!is_defined(service_id)) { return {}; }
-
-    Object.keys(routes)
-      .forEach(function(route_name) {
-        var services = routes[route_name];
-        var trips = services[service_id];
-
-        if (!is_defined(availables[route_name])) {
-          availables[route_name] = {};
-        }
-        Object.extend(availables[route_name], trips);
-      });
-
-    return availables;
-  }
-
-DataService.prototype.second2str = function(seconds) {
-  var minutes = Math.floor(seconds / 60);
-  return [
-    Math.floor(minutes / 60),
-    minutes % 60
-  ].map(function(item) {
-    return item.toString().rjust(2, '0');
-  }).join(':');
-};
-
-  DataService.prototype.is_defined = function(obj) {
-    return typeof(obj) !== "undefined";
-  }
-
-
-
-
-  /**
-  *   Helper functions
-  *
-  **/
-
-  function load(dataUrl, name) {
-  return fetch(dataUrl)
-    .then(function(response) {
-      return response.text();
-    });
-};
-
-// parse csv
-function parseCsv(csvString) {
+// parse csv & import
+DataService.prototype.importData = function(table, csvString) {
   var lines = csvString.split('\n');
   var headerLine = lines[0];
   var fields = headerLine.split(',');
 
-  var dataArray = new Array();
+  var rows = new Array();
 
   for (var i = 1; i < lines.length; i++) {
     var line = lines[i];
 
-    // The csvString that comes from the server has an empty line at the end,
-    // need to ignore it.
     if (line.length == 0) {
       continue;
     }
@@ -141,16 +98,50 @@ function parseCsv(csvString) {
       obj[fields[j]] = unqoute(values[j]);
     }
 
-    dataArray.push(obj);
+    rows.push(table.createRow(obj));
 
   }
 
-  return dataArray;
+  return this.db_
+    .insertOrReplace()
+    .into(table)
+    .values(rows).exec();
 };
+
+
+
+  /**
+  *   Helper functions
+  *
+  **/
+
+function load(dataUrl, name) {
+  return fetch(dataUrl)
+    .then(function(response) {
+      return response.text();
+    });
+};
+
+
 
 function unqoute(str) {
   if (str.startsWith('"')) {
     str = str.slice(1, str.length-1);
   }
   return str;
+}
+
+
+function second2str(seconds) {
+  var minutes = Math.floor(seconds / 60);
+  return [
+    Math.floor(minutes / 60),
+    minutes % 60
+  ].map(function(item) {
+    return item.toString().rjust(2, '0');
+  }).join(':');
+};
+
+function is_defined(obj) {
+  return typeof(obj) !== "undefined";
 }

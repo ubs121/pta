@@ -38,10 +38,14 @@ Copyright (c) 2015 ubs121.
 
   
   window.ds = new DataService();
-  ds.init().then(function(){
+  ds.connect().then(function(){
     console.log("Inited !");
+    
+    ds.stopNames().then(function(rs) {
+      console.log(rs);
+      app.stops = rs;
 
-    app.stops = ds.stops;
+    });
   });
 
 
