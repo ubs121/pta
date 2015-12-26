@@ -32,7 +32,7 @@ DataService.prototype.connect = function() {
 
       console.log('Connected to db !');
 
-      // import data if not exists
+      // FIXME: only import data if not exists
       var data_names = ["trips",  "routes", "calendar", "calendar_dates", "stops"];
       data_names.forEach(function(name) {
         var that = this;
@@ -109,18 +109,46 @@ DataService.prototype._buildSchema = function() {
     return schemaBuilder;
 }
 
-// Stop/station names for datalist
-DataService.prototype.stopNames = function() {
+// Get stop/station names for autocomplete
+DataService.prototype.getStopNames = function() {
   return this.db_
     .select(lf.fn.distinct(this.stops.stop_name).as('name'))
     .from(this.stops)
     .exec();
 }
 
-DataService.prototype.find = function(from, to) {
-  
-}
+DataService.prototype.find = function(from, to, when) {
+  // short aliases
+  var cal = this.calendar;
+  var st = this.stop_times;
+  var tr = this.trips;
 
+  var date = now_date();
+  var day = (new Date().getDay() + 6) % 7; // starts from Sunday
+
+   // calendar, calendar_dates
+  /*
+  trips, calendar хоёроос шүүнэ. stop_times-с цагийг харуулна
+
+  calendar-с ажиллах өдөр, хүчинтэй хугацаа тооцно
+  calendar_dates-с exception тооцно
+  */
+
+  return db.select(st.stop_id, st.departure_time, st.arrival_time).
+    from(st, tr, cal).
+    where(
+      // check calendar start/end dates
+      cal.start_date.lte(date),  cal.end_date.gt(date), 
+      // check calendar available days
+      // check calendar_dates with exception_type 2 (if any to remove)
+      // check calendar_dates with exception_type 1 (if any to add)
+
+      // joins
+      tr.service_id.eq(cal.service_id),
+      st.trip_id.eq(tr.route_id)
+    ).
+    exec();
+}
 
 // parse csv & import
 DataService.prototype.importCsv = function(table, csvString) {

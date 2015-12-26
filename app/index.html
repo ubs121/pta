@@ -18,6 +18,7 @@ Copyright (c) 2015 ubs121
   <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
   <link rel="import" href="../bower_components/paper-styles/color.html">
   <link rel="import" href="../bower_components/paper-button/paper-button.html">
+  <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
   <link rel="import" href="../bower_components/iron-input/iron-input.html">  
 
 <style is="custom-style">
@@ -74,15 +75,26 @@ Copyright (c) 2015 ubs121
       </div>
     </paper-toolbar>
 
+    <paper-tabs selected="0">
+      <paper-tab>Now</paper-tab>
+      <paper-tab>Weekday</paper-tab>
+      <paper-tab>Saturday</paper-tab>
+      <paper-tab>Sunday</paper-tab>
+    </paper-tabs>
+
     <!-- main area -->
     <div class="content">
       
         <p>Search Result.</p>
 
-        <template id="dom-repeat" items="{{trips as t}}">
-          {{t.departure}}
-          {{t.duration}}
-          {{t.arrival}}
+        <template is="dom-repeat" items="{{trips}}">
+          {{item.departure}}
+          {{item.duration}}
+          {{item.arrival}}
+        </template>
+
+        <template is="dom-if" if="{{noResult}}">
+            No data found.
         </template>
 
     </div>

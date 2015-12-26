@@ -41,16 +41,62 @@ Copyright (c) 2015 ubs121.
   ds.connect().then(function(){
     console.log("Inited !");
     
-    ds.stopNames().then(function(rs) {
+    ds.getStopNames().then(function(rs) {
       app.stops = rs;
     });
   });
 
 
   app.find = function(e) {
-    app.trips = ds.find(app.$.from.value, app.$.to.value);
-
+    console.log("find");
+    //app.trips = ds.find(app.$.from.value, app.$.to.value);
+    app.trips = [{'departure': 'sss'}];
+    app.noResult = false;
     // TODO: render trips
+  };
+
+  app.selected = 0;
+  app.noResult = true;
+  app.get_service_id = function(calendar, calendar_dates) {
+    switch(app.selected) {
+      case 'now': {
+        var date = now_date();
+        var day = (new Date().getDay() + 6) % 7; // getDay starts from Sunday
+
+        // calendar:
+        //   service_id => [monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date]
+        // calendar_dates:
+        //   service_id => [date,exception_type]
+        var service_ids = Object.keys(calendar).filter(function(service_id) {
+          // check calendar start/end dates
+          var item = calendar[service_id];
+          return (item[7] <= date) && (date <= item[8]);
+        }).filter(function(service_id) {
+          // check calendar available days
+          return calendar[service_id][day] === 1;
+        }).filter(function(service_id) {
+          // check calendar_dates with exception_type 2 (if any to remove)
+          return calendar_dates[service_id].filter(function(exception_date) {
+            return (exception_date[0] === date) && (exception_date[1] === 2);
+          }).length === 0;
+        }).concat(Object.keys(calendar_dates).filter(function(service_id) {
+          // check calendar_dates with exception_type 1 (if any to add)
+          return calendar_dates[service_id].filter(function(exception_date) {
+            return (exception_date[0] === date) && (exception_date[1] === 1);
+          }).length !== 0;
+        }));
+
+        if (service_ids.length !== 1) {
+          console.log("Can't get service for now.", service_ids);
+        }
+        return service_ids[0];
+      }
+      // Hard-coded service_id selection
+      case 'weekday': return 'CT-14OCT-Combo-Weekday-01';
+      case 'saturday': return 'CT-14OCT-Caltrain-Saturday-02';
+      case 'sunday': return 'CT-14OCT-Caltrain-Sunday-02';
+      default: return '';
+    }
   };
 
 })(document);
