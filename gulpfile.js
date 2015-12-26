@@ -114,12 +114,12 @@ gulp.task('lint', function() {
     }))
 
   // JSCS has not yet a extract option
-  .pipe($.if('*.html', $.htmlExtract()))
-  //.pipe($.jshint())
+  .pipe($.if('*.html', $.htmlExtract({strip: true})))
+  .pipe($.jshint())
   .pipe($.jscs())
-  .pipe($.jscsStylish.combineWithHintResults());
-  //.pipe($.jshint.reporter('jshint-stylish'))
-  //.pipe($.if(!browserSync.active, $.jshint.reporter('fail')));
+  .pipe($.jscsStylish.combineWithHintResults())
+  .pipe($.jshint.reporter('jshint-stylish'))
+  .pipe($.if(!browserSync.active, $.jshint.reporter('fail')));
 });
 
 // Optimize images
@@ -132,7 +132,8 @@ gulp.task('copy', function() {
   var app = gulp.src([
     'app/*',
     '!app/test',
-    '!app/cache-config.json'
+    '!app/cache-config.json',
+    '!**/.DS_Store'
   ], {
     dot: true
   }).pipe(gulp.dest(dist()));
