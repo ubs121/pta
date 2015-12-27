@@ -122,7 +122,10 @@ DataService.prototype.find = function(services, from, to) {
   var tr = this.trips;
   var s = this.stops;
 
-  var now = formatTime(new Date());
+  //var now = formatTime(new Date());
+
+  // DEBUG
+  var now = '19:00:00'; 
 
   return this.db_
     .select(st.trip_id, st.stop_id, st.departure_time, st.arrival_time, s.stop_name)
@@ -134,15 +137,15 @@ DataService.prototype.find = function(services, from, to) {
         st.stop_id.eq(s.stop_id),
         // take from, to stations both
         s.stop_name.in([from, to]),
-        // to station
-        //s.stop_name.eq(from),
         // from now on
         st.departure_time.gt(now),
         // available trips (use first service only)
         tr.service_id.eq(services[0])
       )
+    
     )
-    .orderBy(st.trip_id, st.departure_time)
+    .orderBy(st.trip_id)
+    .orderBy(st.departure_time)
     .limit(20) // FIXME: show only first 20 stop times
     .exec();
 }
