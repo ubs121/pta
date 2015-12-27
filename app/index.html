@@ -19,13 +19,12 @@ Copyright (c) 2015 ubs121
   <link rel="import" href="../bower_components/paper-styles/color.html">
   <link rel="import" href="../bower_components/paper-button/paper-button.html">
   <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+  <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
   <link rel="import" href="../bower_components/iron-input/iron-input.html">  
 
 <style is="custom-style">
     body {
-      background: #fafafa;
       font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      color: #333;
     }
 
     paper-scroll-header-panel {
@@ -35,63 +34,116 @@ Copyright (c) 2015 ubs121
       right: 0;
       bottom: 0;
       left: 0;
-      background-color: var(--paper-light-blue-600, #eee);
     }
-
+    .title {
+      margin-left: 0px;
+    }
 
     .content {
       padding: 10px;
     }
 
+    .middle, .bottom {
+        width: 100%;
+    }
+
+    .label {
+      display: inline-block;
+      width: 20%;
+      max-width: 100px;
+    }
+
+    input {
+        width: 70%;
+        max-width: 300px;
+    }
+
+    .input-container {
+      margin-bottom: 5px;
+      width: 100%;
+      @apply(--layout-horizontal);
+    }
+
+    .table {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 20px;
+    }
+    .table > thead > tr > th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .table > thead > tr > th {
+      vertical-align: bottom;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+    }
+
   </style>
 
 </head>
-<body unresolved class="fullbleed layout vertical">
+<body unresolved>
 
   <span id="browser-sync-binding"></span>
 
   <template is="dom-bind" id="app">
 
-  <paper-scroll-header-panel condenses keep-condensed-header>
+  <paper-scroll-header-panel scroll-away-topbar condenses keep-condensed-header 
+  condensed-header-height="100">
     
     <paper-toolbar class="tall">
-      <div class="title">Train timetable</div>
+      <div class="title">Public Transportation App</div>
 
       <div class="middle">
-        <div>
-          <label for="from">From station</label>
-          <input is="iron-input" id="from" list="location" autocomplete>
+        <div class="input-container">
+          <div class="label" >
+            <label for="from">From</label>
+          </div>
+          <input is="iron-input" id="from" 
+          list="location" autocomplete placeholder="Departure" required>
         </div>
 
-        <div>
-          <label for="to">To station</label>
-          <input is="iron-input" id="to" list="location" autocomplete>
+        <div class="input-container">
+          <div class="label" >
+            <label for="to">To</label>
+          </div>
+          <input is="iron-input" id="to" 
+            list="location" autocomplete placeholder="Arrival">
         </div>
 
       </div>
 
-      <div class="bottom">
-        <paper-button on-click="find">Search</paper-button>
+      <div class="bottom layout horizontal">
+        <paper-button on-click="filter">Search</paper-button>
       </div>
     </paper-toolbar>
 
 
     <!-- main area -->
     <div class="content">
-        <paper-tabs selected="0">
-          <paper-tab>Now</paper-tab>
-          <paper-tab>Weekday</paper-tab>
-          <paper-tab>Saturday</paper-tab>
-          <paper-tab>Sunday</paper-tab>
-        </paper-tabs>
-      
-        <p>Search Result.</p>
+        
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Trip</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template is="dom-repeat" items="{{stop_times}}">
+            <tr>
+                <td>{{item.trip_id}}</td>
+                <td>{{item.departure_time}}</td>
+                <td>{{item.arrival_time}}</td>
+                <td>{{item.duration}}</td>
+            </tr>
+            </template>
+          </tbody>
+        </table>
 
-        <template is="dom-repeat" items="{{trips}}">
-          {{item.departure}}
-          {{item.duration}}
-          {{item.arrival}}
-        </template>
 
         <template is="dom-if" if="{{noResult}}">
             No data found.
@@ -106,6 +158,10 @@ Copyright (c) 2015 ubs121
       <option>[[item.name]]</option>      
     </template>
   </datalist>
+
+  <paper-toast id="toast">
+        <span class="toast-hide-button" role="button" tabindex="0" onclick="app.$.toast.hide()">Ok</span>
+  </paper-toast>
 
 
     <!-- Uncomment next block to enable Service Worker support (1/2) -->

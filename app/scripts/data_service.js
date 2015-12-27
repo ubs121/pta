@@ -5,9 +5,8 @@
  "use strict";
 
 var DataService = function() {
-  this.data = {};
   this.db_ = null;
-
+  this.services = new Array();
   this.schemaBuilder = this._buildSchema();
 
   window.ds = this;
@@ -33,7 +32,7 @@ DataService.prototype.connect = function() {
       console.log('Connected to db !');
 
       // FIXME: only import data if not exists
-      var data_names = ["trips",  "routes", "calendar", "calendar_dates", "stops"];
+      var data_names = ["trips",  "routes", "calendar", "calendar_dates", "stops", "stop_times"];
       data_names.forEach(function(name) {
         var that = this;
         var tbl = db.getSchema().table(name)
@@ -104,7 +103,7 @@ DataService.prototype._buildSchema = function() {
         addColumn('stop_sequence', lf.Type.INTEGER).
         addColumn('arrival_time', lf.Type.STRING).
         addColumn('departure_time', lf.Type.STRING).
-        addPrimaryKey(['trip_id', 'stop_id']);
+        addPrimaryKey(['stop_id', 'trip_id']);
 
     return schemaBuilder;
 }
@@ -117,38 +116,71 @@ DataService.prototype.getStopNames = function() {
     .exec();
 }
 
-DataService.prototype.find = function(from, to, when) {
-  // short aliases
-  var cal = this.calendar;
+// Find possible stop times for given stations
+DataService.prototype.find = function(services, from, to) {
   var st = this.stop_times;
   var tr = this.trips;
+  var s = this.stops;
 
-  var date = now_date();
-  var day = (new Date().getDay() + 6) % 7; // starts from Sunday
+  var now = formatTime(new Date());
 
-   // calendar, calendar_dates
-  /*
-  trips, calendar хоёроос шүүнэ. stop_times-с цагийг харуулна
-
-  calendar-с ажиллах өдөр, хүчинтэй хугацаа тооцно
-  calendar_dates-с exception тооцно
-  */
-
-  return db.select(st.stop_id, st.departure_time, st.arrival_time).
-    from(st, tr, cal).
-    where(
-      // check calendar start/end dates
-      cal.start_date.lte(date),  cal.end_date.gt(date), 
-      // check calendar available days
-      // check calendar_dates with exception_type 2 (if any to remove)
-      // check calendar_dates with exception_type 1 (if any to add)
-
-      // joins
-      tr.service_id.eq(cal.service_id),
-      st.trip_id.eq(tr.route_id)
-    ).
-    exec();
+  return this.db_
+    .select(st.trip_id, st.stop_id, st.departure_time, st.arrival_time, s.stop_name)
+    .from(st, tr, s)
+    .where(
+      lf.op.and(
+        // inner joins
+        st.trip_id.eq(tr.trip_id),
+        st.stop_id.eq(s.stop_id),
+        // take from, to stations both
+        s.stop_name.in([from, to]),
+        // to station
+        //s.stop_name.eq(from),
+        // from now on
+        st.departure_time.gt(now),
+        // available trips (use first service only)
+        tr.service_id.eq(services[0])
+      )
+    )
+    .orderBy(st.trip_id, st.departure_time)
+    .limit(20) // FIXME: show only first 20 stop times
+    .exec();
 }
+
+// Find available services for today
+DataService.prototype.availableServices = function() {
+  var today = new Date();
+  var date = formatDate(today);
+  var day = weekday[today.getDay()]
+
+  var cal = this.calendar;
+  var cald = this.calendar_dates;
+
+  return this.db_
+    .select(lf.fn.distinct(cal.service_id).as('service_id'))
+    .from(cal)
+    .leftOuterJoin(cald, cald.service_id.eq(cal.service_id))
+    .where(
+      lf.op.or(
+        // add calendar_dates with exception_type 1
+        lf.op.and (
+          cald.date.eq(date), 
+          cald.exception_type.eq(1)
+        ),
+
+        lf.op.and (
+          // check calendar available days
+          cal[day].eq(1),
+          // check calendar start/end dates
+          cal.start_date.lte(date),  
+          cal.end_date.gte(date),
+          // remove calendar_dates with exception_type 2
+          cald.exception_type.neq(2)
+        )
+      )
+    )
+    .exec();
+};
 
 // parse csv & import
 DataService.prototype.importCsv = function(table, csvString) {
@@ -209,4 +241,66 @@ function second2str(seconds) {
 
 function is_defined(obj) {
   return typeof(obj) !== "undefined";
+}
+
+var weekday = new Array(7);
+weekday[0]=  "sunday";
+weekday[1] = "monday";
+weekday[2] = "tuesday";
+weekday[3] = "wednesday";
+weekday[4] = "thursday";
+weekday[5] = "friday";
+weekday[6] = "saturday";
+
+function formatDate(d) {
+  // getMonth starts from 0
+  return parseInt([d.getFullYear(), d.getMonth() + 1, d.getDate()].map(function(n){
+    return n.toString().rjust(2, '0');
+  }).join(''));
+}
+
+function formatTime(d) {
+  return d.getHours().toString().rjust(2, '0') + ':' + 
+        d.getMinutes().toString().rjust(2, '0') + ':' +
+        d.getSeconds().toString().rjust(2, '0');
+}
+
+String.prototype.rjust = function(width, padding) {
+  padding = (padding || " ").substr(0, 1); // one and only one char
+  return padding.repeat(width - this.length) + this;
+};
+
+String.prototype.repeat = function(num) {
+  return (num <= 0) ? "" : this + this.repeat(num - 1);
+};
+
+
+function calcDuration (t1, t2) {
+  var secs1 = str2seconds(t1);
+  var secs2 = str2seconds(t2);
+
+  return second2str(secs2 - secs1);
+}
+
+function str2seconds(t) {
+  var parts = t.split(":");
+
+  return parseInt(parts[0])* 3600 + parseInt(parts[1])*60 + parseInt(parts[2]);
+}
+
+function second2str(seconds) {
+  if (seconds < 60 ) {
+    return seconds + ' secs';
+  }
+  if (seconds < 3600) {
+    return Math.floor(seconds / 60) + ' min' 
+  }
+
+  var minutes = Math.floor(seconds / 60);
+  return [
+    Math.floor(minutes / 60),
+    minutes % 60
+  ].map(function(item) {
+    return item.toString().rjust(2, '0');
+  }).join(':');
 }
