@@ -17,3 +17,22 @@ Your project will be evaluated by a Udacity reviewer according to the rubric bel
 * **Offline Functionality** - Application defaults to offline-first functionality, functioning if a network connection doesn't exist.
 
 * **App Delivery** - App includes a build process. Assets are minimized and concatenated as appropriate.
+
+
+## How ro run
+
+Install node.js, gulp and bower.
+
+```sh
+$ npm install
+$ bower install
+$ npm install -g gulp
+```
+
+And serve up a local version with gulp.
+
+```sh
+$ gulp serve
+```
+
+You need a static content server for the production and copy the gulp output into this environment. Update `data` folder with GTFS files when you have newer data.
