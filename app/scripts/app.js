@@ -50,8 +50,6 @@ Copyright (c) 2015 ubs121.
     });
   });
   
-  app.selectedDay = 0;
-  app.noResult = true;
 
   app.filter = function(e) {
     if (app.$.from.value == "") {
@@ -66,11 +64,15 @@ Copyright (c) 2015 ubs121.
       return;
     }
 
+    app.$.noData.style.display = 'block';
+
     ds.find(app.services, app.$.from.value, app.$.to.value).then(function(rs) {
         var arr = new Array();
         var fromStop, toStop;
 
-        // filter stop times
+        //console.log(rs.map(function(r) { return r.stop_times; } ));
+
+        // match from and to stops
         for (var i=0; i<rs.length; i++) {
           if (rs[i].stops.stop_name == app.$.from.value) {
             fromStop = rs[i].stop_times;
@@ -89,12 +91,21 @@ Copyright (c) 2015 ubs121.
               'duration': calcDuration(fromStop.departure_time, toStop.arrival_time)
             });
 
+            fromStop = null;
+            toStop = null;
           }
         }
 
         app.stop_times = arr;
-        app.noResult = false;
+        
+        if (arr.length > 0) {
+          app.$.noData.style.display = 'none';
+        }
     });
+  };
+
+  app.noDataFound = function() {
+    return (app.stop_times && app.stop_times.length == 0);
   };
 
 
