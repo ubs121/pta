@@ -32,7 +32,7 @@ DataService.prototype.connect = function() {
       console.log('Connected to db !');
 
       // FIXME: only import data if not exists
-      var data_names = ["trips",  "routes", "calendar", "calendar_dates", "stops", "stop_times"];
+      var data_names = ["trips",  "calendar", "calendar_dates", "stops", "stop_times"];
       data_names.forEach(function(name) {
         var that = this;
         var tbl = db.getSchema().table(name)
@@ -122,10 +122,10 @@ DataService.prototype.find = function(services, from, to) {
   var tr = this.trips;
   var s = this.stops;
 
-  //var now = formatTime(new Date());
+  var now = formatTime(new Date());
 
   // DEBUG
-  var now = '19:00:00'; 
+  //var now = '19:00:00'; 
 
   return this.db_
     .select(st.trip_id, st.stop_id, st.departure_time, st.arrival_time, s.stop_name)
@@ -139,7 +139,7 @@ DataService.prototype.find = function(services, from, to) {
         s.stop_name.in([from, to]),
         // from now on
         st.departure_time.gt(now),
-        // available trips (use first service only)
+        // available trips
         tr.service_id.eq(services[0])
       )
     
@@ -161,7 +161,7 @@ DataService.prototype.availableServices = function() {
 
   return this.db_
     .select(lf.fn.distinct(cal.service_id).as('service_id'))
-    .from(cal)
+    .from(cal, cald)
     .leftOuterJoin(cald, cald.service_id.eq(cal.service_id))
     .where(
       lf.op.or(
@@ -187,7 +187,7 @@ DataService.prototype.availableServices = function() {
 
 // parse csv & import
 DataService.prototype.importCsv = function(table, csvString) {
-  var lines = csvString.split('\n');
+  var lines = csvString.split('\r\n');
   var headerLine = lines[0];
   var fields = headerLine.split(',');
 
@@ -200,11 +200,11 @@ DataService.prototype.importCsv = function(table, csvString) {
       continue;
     }
 
-    var values = line.split(/[,|;\t]/);
-
+    var values = line.trim().split(',');
     var obj = {};
+
     for (var j = 0; j < values.length; j++) {
-      obj[fields[j]] = unqoute(values[j]);
+      obj[ fields[j] ] = unqoute(values[j].trim());
     }
 
     rows.push(table.createRow(obj));
@@ -216,6 +216,7 @@ DataService.prototype.importCsv = function(table, csvString) {
     .into(table)
     .values(rows).exec();
 };
+
 
 
 

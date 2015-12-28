@@ -45,8 +45,10 @@ Copyright (c) 2015 ubs121.
       app.stops = rs;
     });
 
+    // available services for today
     ds.availableServices().then(function(ss) {
       app.services = ss.map(function(s) { return s.service_id; });
+      console.log("availableServices", app.services);
     });
   });
   
