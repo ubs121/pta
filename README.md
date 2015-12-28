@@ -41,9 +41,15 @@ Type in the url bar:
 http://localhost:5050
 ```
 
-## Deployment
+## Production run
 
-You need a static content server for the production deployment.
+With gulp:
+
+```sh
+$ gulp serve:dist
+```
+
+For the production deployment you need a static content server .
 Copy the dist folder of the gulp output into the production environment and start the server. 
 
 Don't forget updating a data folder when you have newer GTFS files.

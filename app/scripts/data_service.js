@@ -2,11 +2,11 @@
  * Copyright 2015 ubs121. Data service for PTA
  */
 
- "use strict";
+'use strict';
 
 var DataService = function() {
   this.db_ = null;
-  this.services = new Array();
+  this.services = [];
   this.schemaBuilder = this._buildSchema();
 
   window.ds = this;
@@ -25,17 +25,17 @@ DataService.prototype.connect = function() {
       this.routes = db.getSchema().table('routes');
       this.trips = db.getSchema().table('trips');
       this.calendar = db.getSchema().table('calendar');
-      this.calendar_dates = db.getSchema().table('calendar_dates');
+      this.calendarDates = db.getSchema().table('calendar_dates');
       this.stops = db.getSchema().table('stops');
-      this.stop_times = db.getSchema().table('stop_times');
+      this.stopTimes = db.getSchema().table('stop_times');
 
       console.log('Connected to db !');
 
       // FIXME: only import data if not exists
-      var data_names = ["trips",  "calendar", "calendar_dates", "stops", "stop_times"];
-      data_names.forEach(function(name) {
+      var dataNames = ['trips',  'calendar', 'calendar_dates', 'stops', 'stop_times'];
+      dataNames.forEach(function(name) {
         var that = this;
-        var tbl = db.getSchema().table(name)
+        var tbl = db.getSchema().table(name);
 
         fetch('data/' + name + '.txt')
           .then(function(response) {
@@ -51,7 +51,7 @@ DataService.prototype.connect = function() {
       return db;
     }.bind(this));
 
-}
+};
 
 DataService.prototype._buildSchema = function() {
     var schemaBuilder = lf.schema.create('pta', 1);
@@ -106,7 +106,7 @@ DataService.prototype._buildSchema = function() {
         addPrimaryKey(['stop_id', 'trip_id']);
 
     return schemaBuilder;
-}
+};
 
 // Get stop/station names for autocomplete
 DataService.prototype.getStopNames = function() {
@@ -114,11 +114,11 @@ DataService.prototype.getStopNames = function() {
     .select(lf.fn.distinct(this.stops.stop_name).as('name'))
     .from(this.stops)
     .exec();
-}
+};
 
 // Find possible stop times for given stations
 DataService.prototype.find = function(services, from, to) {
-  var st = this.stop_times;
+  var st = this.stopTimes;
   var tr = this.trips;
   var s = this.stops;
 
@@ -148,7 +148,7 @@ DataService.prototype.find = function(services, from, to) {
     .orderBy(st.departure_time)
     .limit(20) // FIXME: show only first 20 stop times
     .exec();
-}
+};
 
 // Find available services for today
 DataService.prototype.availableServices = function() {
@@ -157,7 +157,7 @@ DataService.prototype.availableServices = function() {
   var day = weekday[today.getDay()]
 
   var cal = this.calendar;
-  var cald = this.calendar_dates;
+  var cald = this.calendarDates;
 
   return this.db_
     .select(lf.fn.distinct(cal.service_id).as('service_id'))
@@ -187,7 +187,8 @@ DataService.prototype.availableServices = function() {
 
 // parse csv & import
 DataService.prototype.importCsv = function(table, csvString) {
-  var lines = csvString.split('\r\n');
+  var re = /\r|\n/;
+  var lines = csvString.split(re);
   var headerLine = lines[0];
   var fields = headerLine.split(',');
 
@@ -232,29 +233,14 @@ function unqoute(str) {
   return str;
 }
 
-
-function second2str(seconds) {
-  var minutes = Math.floor(seconds / 60);
-  return [
-    Math.floor(minutes / 60),
-    minutes % 60
-  ].map(function(item) {
-    return item.toString().rjust(2, '0');
-  }).join(':');
-};
-
-function is_defined(obj) {
-  return typeof(obj) !== "undefined";
-}
-
 var weekday = new Array(7);
-weekday[0]=  "sunday";
-weekday[1] = "monday";
-weekday[2] = "tuesday";
-weekday[3] = "wednesday";
-weekday[4] = "thursday";
-weekday[5] = "friday";
-weekday[6] = "saturday";
+weekday[0]=  'sunday';
+weekday[1] = 'monday';
+weekday[2] = 'tuesday';
+weekday[3] = 'wednesday';
+weekday[4] = 'thursday';
+weekday[5] = 'friday';
+weekday[6] = 'saturday';
 
 function formatDate(d) {
   // getMonth starts from 0
@@ -272,11 +258,11 @@ function formatTime(d) {
 String.prototype.rjust = function(width, padding) {
   padding = (padding || " ").substr(0, 1); // one and only one char
   return padding.repeat(width - this.length) + this;
-};
+}
 
 String.prototype.repeat = function(num) {
   return (num <= 0) ? "" : this + this.repeat(num - 1);
-};
+}
 
 
 function calcDuration (t1, t2) {

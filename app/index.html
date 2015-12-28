@@ -11,6 +11,31 @@ Copyright (c) 2015 ubs121
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
+   <!-- Place favicon.ico in the `app/` directory -->
+
+  <!-- Chrome for Android theme color -->
+  <meta name="theme-color" content="#2E3AA1">
+
+  <!-- Web Application Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Tile color for Win8 -->
+  <meta name="msapplication-TileColor" content="#3372DF">
+
+  <!-- Add to homescreen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="PSK">
+  <link rel="icon" sizes="192x192" href="images/touch/chrome-touch-icon-192x192.png">
+
+  <!-- Add to homescreen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Polymer Starter Kit">
+  <link rel="apple-touch-icon" href="images/touch/apple-touch-icon.png">
+
+  <!-- Tile icon for Win8 (144x144) -->
+  <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
+
   <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 
 
@@ -21,6 +46,9 @@ Copyright (c) 2015 ubs121
   <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
   <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
   <link rel="import" href="../bower_components/iron-input/iron-input.html">  
+
+  <link rel="import" href="../bower_components/platinum-sw/platinum-sw-cache.html">
+  <link rel="import" href="../bower_components/platinum-sw/platinum-sw-register.html">
 
 <style is="custom-style">
     body {
@@ -165,7 +193,6 @@ Copyright (c) 2015 ubs121
 
 
     <!-- Uncomment next block to enable Service Worker support (1/2) -->
-    <!--
     <paper-toast id="caching-complete"
                  duration="6000"
                  text="Caching complete! This app will work offline.">
@@ -179,13 +206,14 @@ Copyright (c) 2015 ubs121
                          cache-config-file="cache-config.json">
       </platinum-sw-cache>
     </platinum-sw-register>
-    -->
 
 </template>
 
+  <!-- build:js scripts/app.js  -->
   <script src="bower_components/lovefield/dist/lovefield.min.js"></script>
   <script src="scripts/data_service.js"></script>
   <script src="scripts/app.js"></script>
+  <!-- endbuild-->
 
 </body>
 </html>

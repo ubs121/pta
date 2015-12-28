@@ -148,6 +148,9 @@ gulp.task('copy', function() {
     ])
     .pipe(gulp.dest(dist('elements')));
 
+  var data = gulp.src(['app/data/*'])
+    .pipe(gulp.dest(dist('data')));
+
   var swBootstrap = gulp.src(['bower_components/platinum-sw/bootstrap/*.js'])
     .pipe(gulp.dest(dist('elements/bootstrap')));
 
@@ -158,7 +161,7 @@ gulp.task('copy', function() {
     .pipe($.rename('elements.vulcanized.html'))
     .pipe(gulp.dest(dist('elements')));
 
-  return merge(app, bower, elements, vulcanized, swBootstrap, swToolbox)
+  return merge(app, bower, elements, data, vulcanized, swBootstrap, swToolbox)
     .pipe($.size({
       title: 'copy'
     }));
@@ -297,7 +300,7 @@ gulp.task('default', ['clean'], function(cb) {
     ['copy', 'styles'],
     'elements',
     ['lint', 'images', 'fonts', 'html'],
-    'vulcanize', // 'cache-config',
+    'vulcanize', 'cache-config',
     cb);
 });
 

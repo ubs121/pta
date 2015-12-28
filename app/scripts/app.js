@@ -37,7 +37,7 @@ Copyright (c) 2015 ubs121.
   });
 
   
-  window.ds = new DataService();
+  var ds = new DataService();
   ds.connect().then(function(){
     console.log("connected !");
     
@@ -75,7 +75,7 @@ Copyright (c) 2015 ubs121.
         //console.log(rs.map(function(r) { return r.stop_times; } ));
 
         // match from and to stops
-        for (var i=0; i<rs.length; i++) {
+        for (var i=0; i < rs.length; i++) {
           if (rs[i].stops.stop_name == app.$.from.value) {
             fromStop = rs[i].stop_times;
             continue;
