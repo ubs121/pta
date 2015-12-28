@@ -41,13 +41,20 @@ Type in the url bar:
 http://localhost:5050
 ```
 
-## Production run
-
-With gulp:
+For production preview run:
 
 ```sh
 $ gulp serve:dist
 ```
+
+Type in the url bar:
+
+```
+http://localhost:5051
+```
+
+
+## Deployment
 
 For the production deployment you need a static content server .
 Copy the dist folder of the gulp output into the production environment and start the server. 
