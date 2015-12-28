@@ -31,22 +31,7 @@ DataService.prototype.connect = function() {
 
       console.log('Connected to db !');
 
-      // FIXME: import if online & not local data exists
-      var dataNames = ['trips',  'calendar', 'calendar_dates', 'stops', 'stop_times'];
-      dataNames.forEach(function(name) {
-        var that = this;
-        var tbl = db.getSchema().table(name);
-
-        fetch('data/' + name + '.txt')
-          .then(function(response) {
-            return response.text();
-          })
-          .then(function(csvText) {
-            that.importCsv(tbl, csvText).then(function() {
-              console.log(name + " imported!");
-            });
-          });
-      }.bind(this));
+      this.syncData();
 
       return db;
     }.bind(this));
@@ -219,6 +204,28 @@ DataService.prototype.importCsv = function(table, csvString) {
 };
 
 
+DataService.prototype.syncData = function() {
+
+  // TODO: don't re-import, check if local data exists
+  var that = this;
+  var dataNames = ['trips',  'calendar', 'calendar_dates', 'stops', 'stop_times'];
+  dataNames.forEach(function(name) {
+    var tbl = that.db_.getSchema().table(name);
+
+    fetch('data/' + name + '.txt')
+      .then(function(response) {
+        return response.text();
+      })
+      .then(function(csvText) {
+        that.importCsv(tbl, csvText).then(function() {
+          console.log(name + " imported!");
+        });
+      })
+      .catch(function(err) {
+        console.log("OFFLINE ?!");
+      });
+  });
+};
 
 
   /**
