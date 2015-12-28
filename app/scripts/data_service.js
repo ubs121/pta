@@ -31,7 +31,7 @@ DataService.prototype.connect = function() {
 
       console.log('Connected to db !');
 
-      // FIXME: only import data if not exists
+      // FIXME: import if online & not local data exists
       var dataNames = ['trips',  'calendar', 'calendar_dates', 'stops', 'stop_times'];
       dataNames.forEach(function(name) {
         var that = this;
