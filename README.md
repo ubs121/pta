@@ -19,7 +19,7 @@ Your project will be evaluated by a Udacity reviewer according to the rubric bel
 * **App Delivery** - App includes a build process. Assets are minimized and concatenated as appropriate.
 
 
-## How ro run
+## How ro run locally
 
 Install node.js, gulp and bower.
 
@@ -29,10 +29,21 @@ $ bower install
 $ npm install -g gulp
 ```
 
-And serve up a local version with gulp.
+And serve up a with gulp.
 
 ```sh
 $ gulp serve
 ```
 
-You need a static content server for the production and copy the gulp output into this environment. Update `data` folder with GTFS files when you have newer data.
+Type in the url bar:
+
+```
+http://localhost:5050
+```
+
+## Deployment
+
+You need a static content server for the production deployment.
+Copy the dist folder of the gulp output into the production environment and start the server. 
+
+Don't forget updating a data folder when you have newer GTFS files.
